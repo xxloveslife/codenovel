@@ -1,21 +1,26 @@
 {
-  "name": "util-helper",
-  "displayName": "Util Helper",
-  "description": "Editor productivity helper",
-  "version": "0.0.5",
+  "name": "codenovel",
+  "displayName": "CodeNovel",
+  "description": "Read EPUB books disguised as source code or markdown notes — a stealth reader for your editor.",
+  "version": "1.0.0",
   "publisher": "xxloveslife",
   "license": "MIT",
+  "icon": "images/icon.png",
+  "repository": { "type": "git", "url": "https://github.com/xxloveslife/codenovel.git" },
+  "bugs": { "url": "https://github.com/xxloveslife/codenovel/issues" },
+  "homepage": "https://github.com/xxloveslife/codenovel#readme",
+  "keywords": ["epub", "reader", "ebook", "novel", "stealth", "boss key", "reading", "摸鱼", "小说", "阅读"],
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "main": "./out/extension.js",
   "activationEvents": ["onStartupFinished"],
   "contributes": {
     "commands": [
-      { "command": "stealthReader.openBook", "title": "Stealth Reader: Open Book" },
-      { "command": "stealthReader.nextPage", "title": "Stealth Reader: Next Page" },
-      { "command": "stealthReader.prevPage", "title": "Stealth Reader: Previous Page" },
-      { "command": "stealthReader.bossKey", "title": "Stealth Reader: Boss Key (Toggle)" },
-      { "command": "stealthReader.gotoChapter", "title": "Stealth Reader: Go to Chapter" }
+      { "command": "stealthReader.openBook", "title": "CodeNovel: Open Book" },
+      { "command": "stealthReader.nextPage", "title": "CodeNovel: Next Page" },
+      { "command": "stealthReader.prevPage", "title": "CodeNovel: Previous Page" },
+      { "command": "stealthReader.bossKey", "title": "CodeNovel: Boss Key (Toggle)" },
+      { "command": "stealthReader.gotoChapter", "title": "CodeNovel: Go to Chapter" }
     ],
     "keybindings": [
       { "command": "stealthReader.nextPage", "key": "alt+]", "when": "stealthReader.active" },
@@ -23,7 +28,7 @@
       { "command": "stealthReader.bossKey", "key": "alt+q", "when": "stealthReader.active" }
     ],
     "configuration": {
-      "title": "Stealth Reader",
+      "title": "CodeNovel",
       "properties": {
         "stealthReader.charsPerLine": {
           "type": "number", "default": 40, "minimum": 1,
@@ -39,11 +44,11 @@
         },
         "stealthReader.commentPrefix": {
           "type": "string", "enum": ["auto", "#", "//"], "default": "auto",
-          "description": "注释前缀；auto 按伪装文档语言推断"
+          "description": "注释前缀；auto 按伪装文档语言推断（仅代码模式）"
         },
         "stealthReader.fakeCodeEvery": {
           "type": "integer", "default": 4, "minimum": 1, "maximum": 50,
-          "description": "平均每连续多少行正文插入一段伪装代码"
+          "description": "平均每连续多少行正文插入一段伪装代码/结构"
         },
         "stealthReader.fakeCodeBlock": {
           "type": "integer", "default": 1, "minimum": 0, "maximum": 10,
@@ -55,7 +60,7 @@
         },
         "stealthReader.fakeCodeLines": {
           "type": "array", "items": { "type": "string" }, "default": [],
-          "description": "自定义伪装代码行（按顺序循环使用）；留空使用内置 Python 片段"
+          "description": "自定义伪装行（按顺序循环使用）；留空：代码模式用内置 Python 片段，Markdown 模式用内置笔记片段"
         },
         "stealthReader.disguiseMode": {
           "type": "string", "enum": ["code", "markdown"],
@@ -73,7 +78,8 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "vitest run"
+    "test": "vitest run",
+    "icon": "node scripts/make-icon.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
