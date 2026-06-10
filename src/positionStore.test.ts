@@ -27,4 +27,14 @@ describe('PositionStore', () => {
     await store.clear();
     expect(store.load()).toBeNull();
   });
+
+  it('覆盖保存返回最新值，且 load 返回防御性拷贝', async () => {
+    const store = new PositionStore(new FakeStore());
+    await store.save({ bookPath: 'a', position: { chapterIndex: 0, charOffset: 1 } });
+    await store.save({ bookPath: 'b', position: { chapterIndex: 1, charOffset: 2 } });
+    const loaded = store.load()!;
+    expect(loaded.bookPath).toBe('b');
+    loaded.position.charOffset = 999;
+    expect(store.load()!.position.charOffset).toBe(2);
+  });
 });

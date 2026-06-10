@@ -21,7 +21,8 @@ export class PositionStore {
   }
 
   load(): ReadingState | null {
-    return this.store.get<ReadingState>(KEY) ?? null;
+    const state = this.store.get<ReadingState>(KEY);
+    return state ? JSON.parse(JSON.stringify(state)) : null;
   }
 
   async clear(): Promise<void> {
