@@ -5,8 +5,11 @@ export interface FakeLayout {
   slotLines: number[];
 }
 
-/** 内置伪装片段：按顺序循环，连续几行也像一段真代码 */
+/** 内置伪装片段：按顺序循环，连续几行也像一段真代码；以 import 开头更像文件头 */
 export const DEFAULT_SNIPPETS = [
+  'import json',
+  'import time',
+  'from pathlib import Path',
   'def load_config(path: str) -> dict:',
   '    with open(path, encoding="utf-8") as f:',
   '        return json.load(f)',
