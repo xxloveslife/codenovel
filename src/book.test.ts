@@ -56,6 +56,9 @@ describe('Book 分页与定位', () => {
     const b = new Book(chapters, { charsPerLine: 30, linesPerPage: 10 });
     const page = b.pageOfPosition(pos);
     expect(b.positionOfPage(page).charOffset).toBeLessThanOrEqual(pos.charOffset);
+    if (page + 1 < b.totalPages) {
+      expect(b.positionOfPage(page + 1).charOffset).toBeGreaterThan(pos.charOffset);
+    }
   });
 
   it('chapterStartPage 返回章首页码', () => {
@@ -69,5 +72,17 @@ describe('Book 分页与定位', () => {
     expect(book.totalPages).toBe(1);
     expect(book.getPage(0)).toEqual([]);
     expect(book.positionOfPage(0)).toEqual({ chapterIndex: 0, charOffset: 0 });
+  });
+
+  it('跨章节位置恢复正确', () => {
+    const book = new Book([mk(30), mk(30)], layout);
+    const pos = { chapterIndex: 1, charOffset: 0 };
+    expect(book.pageOfPosition(pos)).toBe(book.chapterStartPage(1));
+  });
+
+  it('超出末尾的位置落到最后一页', () => {
+    const book = new Book([mk(30)], layout);
+    expect(book.pageOfPosition({ chapterIndex: 5, charOffset: 0 })).toBe(book.totalPages - 1);
+    expect(book.pageOfPosition({ chapterIndex: 0, charOffset: 999999 })).toBe(book.totalPages - 1);
   });
 });
