@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-export const SCHEME = 'stealth-reader';
+export const SCHEME = 'pyutil';
+// 自定义 scheme 起得不显眼：悬停标签页时显示完整 URI
 const DOC_NAME = 'util.py'; // 标签页显示的伪装文件名，.py 让语言推断为 python
 
 /** 只读虚拟文档：内容只有空行，装饰画在空行上，文件本体零内容零痕迹 */
@@ -17,6 +18,10 @@ export class StealthDocProvider implements vscode.TextDocumentContentProvider {
   refresh(uri: vscode.Uri): void {
     this._onDidChange.fire(uri);
   }
+
+  dispose(): void {
+    this._onDidChange.dispose();
+  }
 }
 
 export function commentPrefixFor(languageId: string): string {
@@ -32,12 +37,34 @@ export class Renderer implements vscode.Disposable {
   constructor(private provider: StealthDocProvider) {}
 
   async openEditor(linesPerPage: number): Promise<vscode.TextEditor> {
-    if (this.provider.linesPerPage !== linesPerPage) {
+    const needsResize = this.provider.linesPerPage !== linesPerPage;
+    if (needsResize) {
       this.provider.linesPerPage = linesPerPage;
       this.provider.refresh(this.uri);
     }
     const doc = await vscode.workspace.openTextDocument(this.uri);
+    if (needsResize && doc.lineCount !== linesPerPage + 1) {
+      // refresh 是异步生效的：等内容更新落地再渲染，避免装饰画在旧行数上
+      await this.waitForDocChange(doc, 1000);
+    }
     return vscode.window.showTextDocument(doc, { preview: false });
+  }
+
+  /** 等待该虚拟文档的下一次内容变更（带超时兜底） */
+  private waitForDocChange(doc: vscode.TextDocument, timeoutMs: number): Promise<void> {
+    return new Promise(resolve => {
+      const timer = setTimeout(() => {
+        sub.dispose();
+        resolve();
+      }, timeoutMs);
+      const sub = vscode.workspace.onDidChangeTextDocument(e => {
+        if (e.document.uri.toString() === doc.uri.toString()) {
+          clearTimeout(timer);
+          sub.dispose();
+          resolve();
+        }
+      });
+    });
   }
 
   show(editor: vscode.TextEditor, lines: string[], color: string, prefix: string): void {
@@ -64,12 +91,11 @@ export class Renderer implements vscode.Disposable {
   }
 
   async closeStealthTabs(): Promise<void> {
-    for (const group of vscode.window.tabGroups.all) {
-      for (const tab of group.tabs) {
-        if (tab.input instanceof vscode.TabInputText && tab.input.uri.scheme === SCHEME) {
-          await vscode.window.tabGroups.close(tab);
-        }
-      }
+    const stealthTabs = vscode.window.tabGroups.all
+      .flatMap(group => group.tabs)
+      .filter(tab => tab.input instanceof vscode.TabInputText && tab.input.uri.scheme === SCHEME);
+    if (stealthTabs.length > 0) {
+      await vscode.window.tabGroups.close(stealthTabs);
     }
   }
 
