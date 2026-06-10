@@ -58,3 +58,18 @@ describe('buildFakeLayout 随机成段混排', () => {
     expect(l.content.split('\n')[1]).toBe(DEFAULT_SNIPPETS[0]);
   });
 });
+
+describe('buildFakeLayout 槽位缩进', () => {
+  it('默认 indentLevels [0] 时 slotIndents 全为空串，且长度等于 slotLines', () => {
+    const l = buildFakeLayout(5, 4, 1, 0, ['a()']);
+    expect(l.slotIndents).toHaveLength(l.slotLines.length);
+    expect(l.slotIndents.every(s => s === '')).toBe(true);
+  });
+  it('多档缩进时出现非空缩进且为确定性', () => {
+    const a = buildFakeLayout(25, 4, 1, 0.5, ['a()'], [0, 4, 8]);
+    const b = buildFakeLayout(25, 4, 1, 0.5, ['a()'], [0, 4, 8]);
+    expect(a.slotIndents).toEqual(b.slotIndents);
+    expect(a.slotIndents.some(s => s.length > 0)).toBe(true);
+    a.slotIndents.forEach(s => expect([0, 4, 8]).toContain(s.length));
+  });
+});

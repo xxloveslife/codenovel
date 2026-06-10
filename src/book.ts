@@ -6,6 +6,7 @@ export interface Chapter {
 export interface Layout {
   charsPerLine: number;
   linesPerPage: number;
+  widthJitter?: number;
 }
 
 export interface Position {
@@ -23,9 +24,27 @@ function charWidth(ch: string): number {
   return ch.codePointAt(0)! > 0xff ? 2 : 1;
 }
 
-/** 把各章文本按显示宽度断成行；容量 = charsPerLine * 2 个半角单元 */
-export function buildLines(chapters: Chapter[], charsPerLine: number): BookLine[] {
-  const capacity = Math.max(2, charsPerLine * 2);
+/** mulberry32：确定性伪随机，固定种子，保证 widthJitter 结果稳定 */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** 把各章文本按显示宽度断成行；容量 = charsPerLine * 2 个半角单元
+ *  widthJitter > 0 时每行容量在均值附近随机扰动，使右边缘参差；0 则与旧行为完全一致 */
+export function buildLines(chapters: Chapter[], charsPerLine: number, widthJitter = 0): BookLine[] {
+  const baseCapacity = Math.max(2, charsPerLine * 2);
+  const rand = widthJitter > 0 ? mulberry32(0x1234abcd) : null;
+  const nextCapacity = (): number => {
+    if (rand === null) return baseCapacity;
+    return Math.max(2, Math.round(baseCapacity * (1 + widthJitter * (rand() * 2 - 1))));
+  };
   const lines: BookLine[] = [];
   chapters.forEach((chapter, chapterIndex) => {
     let offset = 0;
@@ -35,6 +54,7 @@ export function buildLines(chapters: Chapter[], charsPerLine: number): BookLine[
         let curWidth = 0;
         let curStart = offset;
         let pos = offset;
+        let capacity = nextCapacity();
         for (const c of para) {
           const w = charWidth(c);
           if (curWidth + w > capacity) {
@@ -42,6 +62,7 @@ export function buildLines(chapters: Chapter[], charsPerLine: number): BookLine[
             cur = '';
             curWidth = 0;
             curStart = pos;
+            capacity = nextCapacity();
           }
           cur += c;
           curWidth += w;
@@ -60,7 +81,7 @@ export class Book {
   private readonly linesPerPage: number;
 
   constructor(readonly chapters: Chapter[], layout: Layout) {
-    this.lines = buildLines(chapters, layout.charsPerLine);
+    this.lines = buildLines(chapters, layout.charsPerLine, layout.widthJitter ?? 0);
     this.linesPerPage = layout.linesPerPage;
   }
 

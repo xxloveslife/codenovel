@@ -3,7 +3,25 @@ export interface FakeLayout {
   content: string;
   /** 第 i 个正文槽位对应的文档行号；最后一个槽位留给页码指示 */
   slotLines: number[];
+  /** 第 i 个正文槽位的缩进前缀（长度等于 slotLines） */
+  slotIndents: string[];
 }
+
+/** Markdown 伪装结构行：插在正文段落之间，像在写笔记/文档 */
+export const DEFAULT_MD_SNIPPETS = [
+  '## 笔记整理',
+  '',
+  '- [ ] 待办：整理本周要点',
+  '- 重点摘录如下',
+  '',
+  '> 摘要：先把结论记下来',
+  '',
+  '### 小结',
+  '1. 第一条',
+  '2. 第二条',
+  '',
+  '---',
+];
 
 /** 内置伪装片段：按顺序循环，连续几行也像一段真代码；以 import 开头更像文件头 */
 export const DEFAULT_SNIPPETS = [
@@ -54,13 +72,15 @@ function jittered(avg: number, jitter: number, rand: () => number, min: number):
 /**
  * 随机成段混排布局：连续若干行正文 + 连续若干行代码交替（页首不以代码开头），
  * 块大小围绕 textBlock/codeBlock 均值按 jitter 扰动；固定种子，入参相同则布局相同。
+ * indentLevels: 各槽位的缩进档位列表，长度 > 1 时随机选取；默认 [0] 时全为空串且不消耗随机数。
  */
 export function buildFakeLayout(
   linesPerPage: number,
   textBlock: number,
   codeBlock: number,
   jitter: number,
-  snippets: string[]
+  snippets: string[],
+  indentLevels: number[] = [0]
 ): FakeLayout {
   const src = snippets.length > 0 ? snippets : DEFAULT_SNIPPETS;
   const tb = Math.max(1, Math.floor(textBlock));
@@ -69,6 +89,8 @@ export function buildFakeLayout(
   const rand = mulberry32(0x9e3779b9);
   const lines: string[] = [];
   const slotLines: number[] = [];
+  const slotIndents: string[] = [];
+  const useIndents = indentLevels.length > 1;
   let snip = 0;
   let slotsLeft = linesPerPage;
   while (slotsLeft > 0) {
@@ -76,6 +98,12 @@ export function buildFakeLayout(
     for (let k = 0; k < textRun; k++) {
       slotLines.push(lines.length);
       lines.push('');
+      if (useIndents) {
+        const level = indentLevels[Math.floor(rand() * indentLevels.length)];
+        slotIndents.push(' '.repeat(level));
+      } else {
+        slotIndents.push('');
+      }
     }
     slotsLeft -= textRun;
     if (cb > 0 && slotsLeft > 0) {
@@ -88,5 +116,6 @@ export function buildFakeLayout(
   }
   slotLines.push(lines.length);
   lines.push('');
-  return { content: lines.join('\n'), slotLines };
+  slotIndents.push('');
+  return { content: lines.join('\n'), slotLines, slotIndents };
 }

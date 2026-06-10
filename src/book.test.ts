@@ -86,3 +86,23 @@ describe('Book 分页与定位', () => {
     expect(book.pageOfPosition({ chapterIndex: 0, charOffset: 999999 })).toBe(book.totalPages - 1);
   });
 });
+
+describe('buildLines 行宽抖动', () => {
+  it('widthJitter 0 与不传时行为完全一致', () => {
+    const ch = [{ title: 't', text: '字'.repeat(200) }];
+    expect(buildLines(ch, 40, 0)).toEqual(buildLines(ch, 40));
+  });
+  it('相同入参确定性一致', () => {
+    const ch = [{ title: 't', text: '字'.repeat(200) }];
+    expect(buildLines(ch, 40, 0.3)).toEqual(buildLines(ch, 40, 0.3));
+  });
+  it('抖动后行长度不再全部相等（右边缘参差）', () => {
+    const ch = [{ title: 't', text: '字'.repeat(400) }];
+    const lens = new Set(buildLines(ch, 40, 0.3).slice(0, -1).map(l => l.text.length));
+    expect(lens.size).toBeGreaterThan(1);
+  });
+  it('每行宽度仍在合理范围内（不超过均值的约 1.5 倍全角字数）', () => {
+    const ch = [{ title: 't', text: '字'.repeat(400) }];
+    buildLines(ch, 40, 0.3).forEach(l => expect(l.text.length).toBeLessThanOrEqual(60));
+  });
+});
