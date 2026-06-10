@@ -53,7 +53,7 @@ export class ReaderController {
   }
 
   async gotoChapter(): Promise<void> {
-    if (!(await this.ensureBook())) return;
+    if ((await this.ensureBook()) === 'none') return;
     const items = this.book!.chapterTitles.map((title, index) => ({
       label: title,
       index,
@@ -65,12 +65,13 @@ export class ReaderController {
     await this.render();
   }
 
-  /** 配置变化：按原锚点重建分页；锚点本身不变（防止进度漂移） */
+  /** 配置变化：按原锚点重建分页；锚点本身不变（防止进度漂移）。
+   *  老板键藏起后不允许配置变化把伪装页重新拉起来：仅伪装页可见时才重渲染。 */
   async onConfigChanged(): Promise<void> {
     if (!this.book) return;
     this.book = new Book(this.book.chapters, this.layout());
     this.page = this.book.pageOfPosition(this.anchor);
-    await this.render();
+    if (this.findStealthEditor()) await this.render();
   }
 
   /** 切走再切回伪装标签页时，重新应用装饰 */
@@ -80,7 +81,8 @@ export class ReaderController {
   }
 
   private async turnPage(delta: number): Promise<void> {
-    if (!(await this.ensureBook())) return;
+    // 刚从存档恢复时已渲染到存档页，本次按键不再额外翻页
+    if ((await this.ensureBook()) !== 'had') return;
     const next = this.page + delta;
     if (next < 0 || next >= this.book!.totalPages) return;
     this.page = next;
@@ -94,18 +96,18 @@ export class ReaderController {
     );
   }
 
-  /** 无书时尝试从存档恢复；存档也没有则提示 */
-  private async ensureBook(): Promise<boolean> {
-    if (this.book) return true;
+  /** 无书时尝试从存档恢复；返回书的来源：原本就有 / 刚恢复 / 没有 */
+  private async ensureBook(): Promise<'had' | 'restored' | 'none'> {
+    if (this.book) return 'had';
     const saved = this.store.load();
     if (!saved) {
       void vscode.window.showInformationMessage(
         '先通过命令面板执行 "Stealth Reader: Open Book" 打开一本书'
       );
-      return false;
+      return 'none';
     }
     await this.loadBook(saved.bookPath, saved.position);
-    return this.book !== null;
+    return this.book !== null ? 'restored' : 'none';
   }
 
   private async loadBook(fsPath: string, pos: Position | null): Promise<void> {
