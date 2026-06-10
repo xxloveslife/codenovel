@@ -33,7 +33,9 @@ export class ReaderController {
     const cfg = this.config();
     return {
       linesPerPage: cfg.get('linesPerPage', 25),
-      fakeCodeRatio: cfg.get('fakeCodeRatio', 0.25),
+      fakeCodeEvery: cfg.get('fakeCodeEvery', 4),
+      fakeCodeBlock: cfg.get('fakeCodeBlock', 1),
+      fakeCodeJitter: cfg.get('fakeCodeJitter', 0.5),
       fakeCodeLines: cfg.get('fakeCodeLines', []),
     };
   }

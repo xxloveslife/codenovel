@@ -33,30 +33,58 @@ export const DEFAULT_SNIPPETS = [
   '    main()',
 ];
 
+/** mulberry32：确定性伪随机，保证相同配置下布局稳定（翻页代码骨架不跳动） */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** 围绕均值 avg 按 jitter 幅度扰动：jitter 0 → 恒为 avg；jitter 1 → 约在 [1, 2*avg] */
+function jittered(avg: number, jitter: number, rand: () => number, min: number): number {
+  const delta = avg * jitter * (rand() * 2 - 1);
+  return Math.max(min, Math.round(avg + delta));
+}
+
 /**
- * 生成伪装文档布局：每个正文槽位前按 ratio 累积预算插入代码行（Bresenham 式），
- * 布局对相同入参完全确定，保证翻页时代码骨架稳定不跳动。
+ * 随机成段混排布局：连续若干行正文 + 连续若干行代码交替（页首不以代码开头），
+ * 块大小围绕 textBlock/codeBlock 均值按 jitter 扰动；固定种子，入参相同则布局相同。
  */
 export function buildFakeLayout(
   linesPerPage: number,
-  ratio: number,
+  textBlock: number,
+  codeBlock: number,
+  jitter: number,
   snippets: string[]
 ): FakeLayout {
   const src = snippets.length > 0 ? snippets : DEFAULT_SNIPPETS;
-  const safeRatio = Math.min(3, Math.max(0, ratio));
+  const tb = Math.max(1, Math.floor(textBlock));
+  const cb = Math.max(0, Math.floor(codeBlock));
+  const j = Math.min(1, Math.max(0, jitter));
+  const rand = mulberry32(0x9e3779b9);
   const lines: string[] = [];
   const slotLines: number[] = [];
-  let budget = 0;
   let snip = 0;
-  for (let i = 0; i < linesPerPage; i++) {
-    budget += safeRatio;
-    while (budget >= 1) {
-      lines.push(src[snip % src.length]);
-      snip++;
-      budget -= 1;
+  let slotsLeft = linesPerPage;
+  while (slotsLeft > 0) {
+    const textRun = Math.min(slotsLeft, jittered(tb, j, rand, 1));
+    for (let k = 0; k < textRun; k++) {
+      slotLines.push(lines.length);
+      lines.push('');
     }
-    slotLines.push(lines.length);
-    lines.push('');
+    slotsLeft -= textRun;
+    if (cb > 0 && slotsLeft > 0) {
+      const codeRun = jittered(cb, j, rand, 1);
+      for (let k = 0; k < codeRun; k++) {
+        lines.push(src[snip % src.length]);
+        snip++;
+      }
+    }
   }
   slotLines.push(lines.length);
   lines.push('');

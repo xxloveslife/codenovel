@@ -7,7 +7,9 @@ const DOC_NAME = 'util.py'; // 标签页显示的伪装文件名，.py 让语言
 
 export interface StealthSpec {
   linesPerPage: number;
-  fakeCodeRatio: number;
+  fakeCodeEvery: number;
+  fakeCodeBlock: number;
+  fakeCodeJitter: number;
   fakeCodeLines: string[];
 }
 
@@ -16,14 +18,14 @@ export class StealthDocProvider implements vscode.TextDocumentContentProvider {
   private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
   readonly onDidChange = this._onDidChange.event;
   private specKey = '';
-  layout: FakeLayout = buildFakeLayout(25, 0, []);
+  layout: FakeLayout = buildFakeLayout(25, 4, 0, 0, []);
 
   /** 应用新 spec；返回内容是否变化（需要 refresh） */
   setSpec(spec: StealthSpec): boolean {
     const key = JSON.stringify(spec);
     if (key === this.specKey) return false;
     this.specKey = key;
-    this.layout = buildFakeLayout(spec.linesPerPage, spec.fakeCodeRatio, spec.fakeCodeLines);
+    this.layout = buildFakeLayout(spec.linesPerPage, spec.fakeCodeEvery, spec.fakeCodeBlock, spec.fakeCodeJitter, spec.fakeCodeLines);
     return true;
   }
 

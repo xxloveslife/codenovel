@@ -2,7 +2,7 @@
   "name": "util-helper",
   "displayName": "Util Helper",
   "description": "Editor productivity helper",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "xxloveslife",
   "license": "MIT",
   "engines": { "vscode": "^1.85.0" },
@@ -41,9 +41,17 @@
           "type": "string", "enum": ["auto", "#", "//"], "default": "auto",
           "description": "注释前缀；auto 按伪装文档语言推断"
         },
-        "stealthReader.fakeCodeRatio": {
-          "type": "number", "default": 0.25, "minimum": 0, "maximum": 3,
-          "description": "伪装代码行与正文行的比例（0 = 关闭混排，1 = 一行正文一行代码）"
+        "stealthReader.fakeCodeEvery": {
+          "type": "integer", "default": 4, "minimum": 1, "maximum": 50,
+          "description": "平均每连续多少行正文插入一段伪装代码"
+        },
+        "stealthReader.fakeCodeBlock": {
+          "type": "integer", "default": 1, "minimum": 0, "maximum": 10,
+          "description": "每段伪装代码的平均行数（0 = 关闭混排）"
+        },
+        "stealthReader.fakeCodeJitter": {
+          "type": "number", "default": 0.5, "minimum": 0, "maximum": 1,
+          "description": "块大小随机幅度：0 完全规整，1 在均值 0~2 倍间浮动（固定种子，翻页不跳动）"
         },
         "stealthReader.fakeCodeLines": {
           "type": "array", "items": { "type": "string" }, "default": [],
