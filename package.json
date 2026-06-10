@@ -2,7 +2,7 @@
   "name": "util-helper",
   "displayName": "Util Helper",
   "description": "Editor productivity helper",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "xxloveslife",
   "license": "MIT",
   "engines": { "vscode": "^1.85.0" },
@@ -56,6 +56,16 @@
         "stealthReader.fakeCodeLines": {
           "type": "array", "items": { "type": "string" }, "default": [],
           "description": "自定义伪装代码行（按顺序循环使用）；留空使用内置 Python 片段"
+        },
+        "stealthReader.disguiseMode": {
+          "type": "string", "enum": ["code", "markdown"],
+          "enumDescriptions": ["伪装成 Python 代码文件 util.py", "伪装成 Markdown 笔记 notes.md"],
+          "default": "code",
+          "description": "伪装载体：代码文件 或 Markdown 笔记"
+        },
+        "stealthReader.widthJitter": {
+          "type": "number", "default": 0.15, "minimum": 0, "maximum": 0.6,
+          "description": "每行字数随机浮动幅度，让正文右边缘参差更自然（0 = 整齐）"
         }
       }
     }

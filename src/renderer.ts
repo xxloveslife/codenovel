@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { buildFakeLayout, FakeLayout } from './fakeLayout';
+import { buildFakeLayout, FakeLayout, DEFAULT_SNIPPETS, DEFAULT_MD_SNIPPETS } from './fakeLayout';
 
-export const SCHEME = 'pyutil';
-// 自定义 scheme 起得不显眼：悬停标签页时显示完整 URI
-const DOC_NAME = 'util.py'; // 标签页显示的伪装文件名，.py 让语言推断为 python
+export const SCHEME = 'draft';
+// 自定义 scheme 起得不显眼：悬停标签页时显示完整 URI；scheme 改为 draft 更中性
 
 export interface StealthSpec {
+  mode: 'code' | 'markdown';
   linesPerPage: number;
   fakeCodeEvery: number;
   fakeCodeBlock: number;
@@ -19,13 +19,19 @@ export class StealthDocProvider implements vscode.TextDocumentContentProvider {
   readonly onDidChange = this._onDidChange.event;
   private specKey = '';
   layout: FakeLayout = buildFakeLayout(25, 4, 0, 0, []);
+  mode: 'code' | 'markdown' = 'code';
 
   /** 应用新 spec；返回内容是否变化（需要 refresh） */
   setSpec(spec: StealthSpec): boolean {
     const key = JSON.stringify(spec);
     if (key === this.specKey) return false;
     this.specKey = key;
-    this.layout = buildFakeLayout(spec.linesPerPage, spec.fakeCodeEvery, spec.fakeCodeBlock, spec.fakeCodeJitter, spec.fakeCodeLines);
+    this.mode = spec.mode;
+    const snippets = spec.fakeCodeLines.length > 0
+      ? spec.fakeCodeLines
+      : (spec.mode === 'markdown' ? DEFAULT_MD_SNIPPETS : DEFAULT_SNIPPETS);
+    const indentLevels = spec.mode === 'code' ? [0, 4, 8] : [0];
+    this.layout = buildFakeLayout(spec.linesPerPage, spec.fakeCodeEvery, spec.fakeCodeBlock, spec.fakeCodeJitter, snippets, indentLevels);
     return true;
   }
 
@@ -50,18 +56,27 @@ export function commentPrefixFor(languageId: string): string {
 }
 
 export class Renderer implements vscode.Disposable {
-  readonly uri = vscode.Uri.parse(`${SCHEME}:/${DOC_NAME}`);
+  private static readonly DOC_NAMES = { code: 'util.py', markdown: 'notes.md' } as const;
+
+  get uri(): vscode.Uri {
+    return vscode.Uri.parse(`${SCHEME}:/${Renderer.DOC_NAMES[this.provider.mode]}`);
+  }
+
   private decoType = vscode.window.createTextEditorDecorationType({});
 
   constructor(private provider: StealthDocProvider) {}
 
   async openEditor(spec: StealthSpec): Promise<vscode.TextEditor> {
     const changed = this.provider.setSpec(spec);
-    if (changed) this.provider.refresh(this.uri);
-    const doc = await vscode.workspace.openTextDocument(this.uri);
+    const target = this.uri;
+    if (changed) {
+      this.provider.refresh(target);
+      await this.closeStealthTabs(target); // 关掉切换模式后残留的另一文件名 tab
+    }
+    const doc = await vscode.workspace.openTextDocument(target);
     // 仅当文档内容尚未等于目标内容时才等刷新落地（避免装饰画在旧行数上）。
     // 布局是确定性的：重启后恢复的内容常与新内容完全一致 → refresh 不产生变化
-    // 事件，旧的“等行数变化”判断会白等满超时。改用内容比较，已一致则立即渲染。
+    // 事件，旧的"等行数变化"判断会白等满超时。改用内容比较，已一致则立即渲染。
     if (changed && doc.getText() !== this.provider.layout.content) {
       await this.waitForDocChange(doc, 300);
     }
@@ -86,12 +101,12 @@ export class Renderer implements vscode.Disposable {
   }
 
   show(editor: vscode.TextEditor, lines: string[], color: string, prefix: string): void {
-    const slots = this.provider.layout.slotLines;
-    const decorations: vscode.DecorationOptions[] = lines.slice(0, slots.length).map((line, i) => ({
-      range: new vscode.Range(slots[i], 0, slots[i], 0),
+    const { slotLines, slotIndents } = this.provider.layout;
+    const decorations: vscode.DecorationOptions[] = lines.slice(0, slotLines.length).map((line, i) => ({
+      range: new vscode.Range(slotLines[i], 0, slotLines[i], 0),
       renderOptions: {
         after: {
-          contentText: line === '' ? '' : `${prefix} ${line}`,
+          contentText: line === '' ? '' : `${slotIndents[i]}${prefix ? prefix + ' ' : ''}${line}`,
           color,
           textDecoration: 'none; white-space: pre;',
         },
@@ -108,13 +123,13 @@ export class Renderer implements vscode.Disposable {
     }
   }
 
-  async closeStealthTabs(): Promise<void> {
+  async closeStealthTabs(except?: vscode.Uri): Promise<void> {
     const stealthTabs = vscode.window.tabGroups.all
       .flatMap(group => group.tabs)
-      .filter(tab => tab.input instanceof vscode.TabInputText && tab.input.uri.scheme === SCHEME);
-    if (stealthTabs.length > 0) {
-      await vscode.window.tabGroups.close(stealthTabs);
-    }
+      .filter(tab => tab.input instanceof vscode.TabInputText
+        && tab.input.uri.scheme === SCHEME
+        && (!except || tab.input.uri.toString() !== except.toString()));
+    if (stealthTabs.length > 0) await vscode.window.tabGroups.close(stealthTabs);
   }
 
   dispose(): void {

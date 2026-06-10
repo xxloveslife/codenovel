@@ -26,12 +26,14 @@ export class ReaderController {
     return {
       charsPerLine: cfg.get('charsPerLine', 40),
       linesPerPage: cfg.get('linesPerPage', 25),
+      widthJitter: cfg.get('widthJitter', 0.15),
     };
   }
 
   private spec(): StealthSpec {
     const cfg = this.config();
     return {
+      mode: cfg.get('disguiseMode', 'code') as 'code' | 'markdown',
       linesPerPage: cfg.get('linesPerPage', 25),
       fakeCodeEvery: cfg.get('fakeCodeEvery', 4),
       fakeCodeBlock: cfg.get('fakeCodeBlock', 1),
@@ -156,9 +158,12 @@ export class ReaderController {
 
   private showPage(editor: vscode.TextEditor): void {
     const cfg = this.config();
-    const prefixCfg = cfg.get<string>('commentPrefix', 'auto');
-    const prefix =
-      prefixCfg === 'auto' ? commentPrefixFor(editor.document.languageId) : prefixCfg;
+    const mode = cfg.get<string>('disguiseMode', 'code');
+    let prefix = '';
+    if (mode === 'code') {
+      const prefixCfg = cfg.get<string>('commentPrefix', 'auto');
+      prefix = prefixCfg === 'auto' ? commentPrefixFor(editor.document.languageId) : prefixCfg;
+    }
     const lines = [
       ...this.book!.getPage(this.page),
       `· ${this.page + 1}/${this.book!.totalPages}`,
