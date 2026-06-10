@@ -54,3 +54,51 @@ export function buildLines(chapters: Chapter[], charsPerLine: number): BookLine[
   });
   return lines;
 }
+
+export class Book {
+  private readonly lines: BookLine[];
+  private readonly linesPerPage: number;
+
+  constructor(readonly chapters: Chapter[], layout: Layout) {
+    this.lines = buildLines(chapters, layout.charsPerLine);
+    this.linesPerPage = layout.linesPerPage;
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.lines.length / this.linesPerPage));
+  }
+
+  get chapterTitles(): string[] {
+    return this.chapters.map(c => c.title);
+  }
+
+  getPage(page: number): string[] {
+    return this.lines
+      .slice(page * this.linesPerPage, (page + 1) * this.linesPerPage)
+      .map(l => l.text);
+  }
+
+  /** 页首行对应的位置（用于持久化进度，与布局无关） */
+  positionOfPage(page: number): Position {
+    const line = this.lines[page * this.linesPerPage];
+    return line
+      ? { chapterIndex: line.chapterIndex, charOffset: line.charOffset }
+      : { chapterIndex: 0, charOffset: 0 };
+  }
+
+  /** 找到覆盖该位置的页（恢复进度 / 布局变化后换算） */
+  pageOfPosition(pos: Position): number {
+    const idx = this.lines.findIndex(
+      l =>
+        l.chapterIndex > pos.chapterIndex ||
+        (l.chapterIndex === pos.chapterIndex &&
+          l.charOffset + l.text.length > pos.charOffset)
+    );
+    return idx === -1 ? this.totalPages - 1 : Math.floor(idx / this.linesPerPage);
+  }
+
+  chapterStartPage(chapterIndex: number): number {
+    const idx = this.lines.findIndex(l => l.chapterIndex >= chapterIndex);
+    return idx === -1 ? this.totalPages - 1 : Math.floor(idx / this.linesPerPage);
+  }
+}

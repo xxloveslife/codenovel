@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildLines } from './book';
+import { buildLines, Book } from './book';
 
 describe('buildLines 断行', () => {
   it('ASCII 按半角宽度断行（40 字 = 80 半角单元）', () => {
@@ -27,5 +27,47 @@ describe('buildLines 断行', () => {
       [{ title: 'a', text: '甲' }, { title: 'b', text: '乙' }], 40);
     expect(lines[0].chapterIndex).toBe(0);
     expect(lines[1].chapterIndex).toBe(1);
+  });
+});
+
+describe('Book 分页与定位', () => {
+  const mk = (n: number) => ({
+    title: 'c',
+    text: Array.from({ length: n }, (_, i) => `行${i}`).join('\n'),
+  });
+  const layout = { charsPerLine: 40, linesPerPage: 25 };
+
+  it('totalPages 按每页行数向上取整', () => {
+    const book = new Book([mk(60)], layout);
+    expect(book.totalPages).toBe(3);
+    expect(book.getPage(0)).toHaveLength(25);
+    expect(book.getPage(2)).toHaveLength(10);
+  });
+
+  it('positionOfPage / pageOfPosition 往返一致', () => {
+    const book = new Book([mk(60)], layout);
+    expect(book.pageOfPosition(book.positionOfPage(2))).toBe(2);
+  });
+
+  it('布局变化后位置仍落在覆盖原偏移的页上', () => {
+    const chapters = [mk(100)];
+    const a = new Book(chapters, layout);
+    const pos = a.positionOfPage(3);
+    const b = new Book(chapters, { charsPerLine: 30, linesPerPage: 10 });
+    const page = b.pageOfPosition(pos);
+    expect(b.positionOfPage(page).charOffset).toBeLessThanOrEqual(pos.charOffset);
+  });
+
+  it('chapterStartPage 返回章首页码', () => {
+    const book = new Book([mk(30), mk(30)], layout);
+    expect(book.chapterStartPage(0)).toBe(0);
+    expect(book.chapterStartPage(1)).toBe(1); // 第 2 章从第 30 行开始 → 页 1
+  });
+
+  it('空书也有 1 页且不崩溃', () => {
+    const book = new Book([{ title: 'x', text: '' }], layout);
+    expect(book.totalPages).toBe(1);
+    expect(book.getPage(0)).toEqual([]);
+    expect(book.positionOfPage(0)).toEqual({ chapterIndex: 0, charOffset: 0 });
   });
 });
