@@ -14,6 +14,22 @@ function asArray<T>(v: T | T[] | undefined): T[] {
   return v === undefined ? [] : Array.isArray(v) ? v : [v];
 }
 
+function safeCodePoint(n: number): string {
+  return Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : '�';
+}
+
+/** 按 XML 声明的 encoding 解码字节；默认 UTF-8 */
+function decodeBytes(bytes: Uint8Array): string {
+  const head = new TextDecoder('latin1').decode(bytes.subarray(0, 120));
+  const m = head.match(/encoding=["']([\w-]+)["']/i);
+  const enc = m ? m[1].toLowerCase() : 'utf-8';
+  try {
+    return new TextDecoder(enc).decode(bytes);
+  } catch {
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+}
+
 /** XHTML → 纯文本：块级闭合转换行，剥标签，解常见实体，去空白行 */
 export function htmlToText(html: string): string {
   let s = html.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '');
@@ -24,8 +40,9 @@ export function htmlToText(html: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => safeCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => safeCodePoint(parseInt(n, 16)))
     .replace(/&amp;/g, '&');
   return s
     .split('\n')
@@ -73,9 +90,15 @@ export async function parseEpubBuffer(data: Uint8Array): Promise<ParsedBook> {
   for (const ref of asArray<Record<string, string>>(pkg.spine?.itemref)) {
     const href = manifest.get(ref['@_idref']);
     if (!href) continue;
-    const file = zip.file(decodeURIComponent(opfDir + href));
+    let zipPath = opfDir + href;
+    try {
+      zipPath = decodeURIComponent(zipPath);
+    } catch {
+      // href 含未编码的 %，按原样使用
+    }
+    const file = zip.file(zipPath) ?? zip.file(opfDir + href);
     if (!file) continue;
-    const html = await file.async('text');
+    const html = decodeBytes(await file.async('uint8array'));
     const text = htmlToText(html);
     if (!text) continue;
     chapters.push({
