@@ -25,11 +25,11 @@
       "title": "Stealth Reader",
       "properties": {
         "stealthReader.charsPerLine": {
-          "type": "number", "default": 40,
+          "type": "number", "default": 40, "minimum": 1,
           "description": "每行字数（全角计 1，半角计 0.5）"
         },
         "stealthReader.linesPerPage": {
-          "type": "number", "default": 25,
+          "type": "number", "default": 25, "minimum": 1,
           "description": "每页行数"
         },
         "stealthReader.textColor": {

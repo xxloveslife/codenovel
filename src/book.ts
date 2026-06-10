@@ -25,7 +25,7 @@ function charWidth(ch: string): number {
 
 /** 把各章文本按显示宽度断成行；容量 = charsPerLine * 2 个半角单元 */
 export function buildLines(chapters: Chapter[], charsPerLine: number): BookLine[] {
-  const capacity = charsPerLine * 2;
+  const capacity = Math.max(2, charsPerLine * 2);
   const lines: BookLine[] = [];
   chapters.forEach((chapter, chapterIndex) => {
     let offset = 0;

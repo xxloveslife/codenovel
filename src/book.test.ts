@@ -5,11 +5,13 @@ describe('buildLines 断行', () => {
   it('ASCII 按半角宽度断行（40 字 = 80 半角单元）', () => {
     const lines = buildLines([{ title: 't', text: 'a'.repeat(81) }], 40);
     expect(lines.map(l => l.text)).toEqual(['a'.repeat(80), 'a']);
+    expect(lines[1].charOffset).toBe(80);
   });
 
   it('中文按全角宽度断行', () => {
     const lines = buildLines([{ title: 't', text: '字'.repeat(41) }], 40);
     expect(lines.map(l => l.text)).toEqual(['字'.repeat(40), '字']);
+    expect(lines[1].charOffset).toBe(40);
   });
 
   it('跳过空行并记录正确的章内字符偏移', () => {
