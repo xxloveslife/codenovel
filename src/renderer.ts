@@ -29,10 +29,6 @@ export class StealthDocProvider implements vscode.TextDocumentContentProvider {
     return true;
   }
 
-  get expectedLineCount(): number {
-    return this.layout.content.split('\n').length;
-  }
-
   provideTextDocumentContent(): string {
     // 假代码进文档本体获得真实语法高亮；正文画在空槽位行上
     return this.layout.content;
@@ -63,8 +59,11 @@ export class Renderer implements vscode.Disposable {
     const changed = this.provider.setSpec(spec);
     if (changed) this.provider.refresh(this.uri);
     const doc = await vscode.workspace.openTextDocument(this.uri);
-    if (changed && doc.lineCount !== this.provider.expectedLineCount) {
-      await this.waitForDocChange(doc, 1000);
+    // 仅当文档内容尚未等于目标内容时才等刷新落地（避免装饰画在旧行数上）。
+    // 布局是确定性的：重启后恢复的内容常与新内容完全一致 → refresh 不产生变化
+    // 事件，旧的“等行数变化”判断会白等满超时。改用内容比较，已一致则立即渲染。
+    if (changed && doc.getText() !== this.provider.layout.content) {
+      await this.waitForDocChange(doc, 300);
     }
     return vscode.window.showTextDocument(doc, { preview: false });
   }

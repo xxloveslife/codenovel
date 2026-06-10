@@ -2,7 +2,7 @@
   "name": "util-helper",
   "displayName": "Util Helper",
   "description": "Editor productivity helper",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "xxloveslife",
   "license": "MIT",
   "engines": { "vscode": "^1.85.0" },
