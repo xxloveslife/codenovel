@@ -1,0 +1,61 @@
+{
+  "name": "stealth-reader",
+  "displayName": "Util Helper",
+  "description": "Editor productivity helper",
+  "version": "0.0.1",
+  "publisher": "xxloveslife",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      { "command": "stealthReader.openBook", "title": "Stealth Reader: Open Book" },
+      { "command": "stealthReader.nextPage", "title": "Stealth Reader: Next Page" },
+      { "command": "stealthReader.prevPage", "title": "Stealth Reader: Previous Page" },
+      { "command": "stealthReader.bossKey", "title": "Stealth Reader: Boss Key" },
+      { "command": "stealthReader.gotoChapter", "title": "Stealth Reader: Go to Chapter" }
+    ],
+    "keybindings": [
+      { "command": "stealthReader.nextPage", "key": "alt+]", "when": "stealthReader.active" },
+      { "command": "stealthReader.prevPage", "key": "alt+[", "when": "stealthReader.active" },
+      { "command": "stealthReader.bossKey", "key": "alt+q", "when": "stealthReader.active" }
+    ],
+    "configuration": {
+      "title": "Stealth Reader",
+      "properties": {
+        "stealthReader.charsPerLine": {
+          "type": "number", "default": 40,
+          "description": "每行字数（全角计 1，半角计 0.5）"
+        },
+        "stealthReader.linesPerPage": {
+          "type": "number", "default": 25,
+          "description": "每页行数"
+        },
+        "stealthReader.textColor": {
+          "type": "string", "default": "#6A9955",
+          "description": "正文颜色（默认近似深色主题注释绿）"
+        },
+        "stealthReader.commentPrefix": {
+          "type": "string", "enum": ["auto", "#", "//"], "default": "auto",
+          "description": "注释前缀；auto 按伪装文档语言推断"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.4.0",
+    "jszip": "^3.10.1"
+  }
+}

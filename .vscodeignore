@@ -1,0 +1,7 @@
+.vscode/**
+src/**
+tsconfig.json
+docs/**
+scripts/**
+**/*.map
+sample.epub
