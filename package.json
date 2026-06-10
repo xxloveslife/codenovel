@@ -4,6 +4,7 @@
   "description": "Editor productivity helper",
   "version": "0.0.1",
   "publisher": "xxloveslife",
+  "license": "MIT",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "main": "./out/extension.js",
