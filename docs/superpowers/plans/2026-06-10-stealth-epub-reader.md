@@ -847,6 +847,12 @@ export class ReaderController {
   private book: Book | null = null;
   private bookPath = '';
   private page = 0;
+  /**
+   * 持久化锚点：只在用户主动导航（翻页/跳章/开书）时更新。
+   * 配置变化时不得用换算后的页首位置覆盖它——positionOfPage 会把位置
+   * 重新锚到页首，反复切换布局会让保存的进度单调向后漂移（每次最多一页）。
+   */
+  private anchor: Position = { chapterIndex: 0, charOffset: 0 };
 
   constructor(private renderer: Renderer, private store: PositionStore) {}
 
@@ -894,15 +900,15 @@ export class ReaderController {
     const picked = await vscode.window.showQuickPick(items, { placeHolder: '跳转到章节' });
     if (!picked) return;
     this.page = this.book!.chapterStartPage(picked.index);
+    this.anchor = this.book!.positionOfPage(this.page);
     await this.render();
   }
 
-  /** 配置变化：以字符偏移保持位置，重建分页 */
+  /** 配置变化：按原锚点重建分页；锚点本身不变（防止进度漂移） */
   async onConfigChanged(): Promise<void> {
     if (!this.book) return;
-    const pos = this.book.positionOfPage(this.page);
     this.book = new Book(this.book.chapters, this.layout());
-    this.page = this.book.pageOfPosition(pos);
+    this.page = this.book.pageOfPosition(this.anchor);
     await this.render();
   }
 
@@ -917,6 +923,7 @@ export class ReaderController {
     const next = this.page + delta;
     if (next < 0 || next >= this.book!.totalPages) return;
     this.page = next;
+    this.anchor = this.book!.positionOfPage(this.page);
     await this.render();
   }
 
@@ -946,6 +953,8 @@ export class ReaderController {
       this.book = new Book(parsed.chapters, this.layout());
       this.bookPath = fsPath;
       this.page = pos ? this.book.pageOfPosition(pos) : 0;
+      // 恢复时保留原始存档位置作为锚点（不重新锚到页首），全新打开才取页首
+      this.anchor = pos ?? this.book.positionOfPage(this.page);
       await vscode.commands.executeCommand('setContext', 'stealthReader.active', true);
       await this.render();
     } catch (e) {
@@ -961,10 +970,7 @@ export class ReaderController {
     if (!this.book) return;
     const editor = await this.renderer.openEditor(this.layout().linesPerPage);
     this.showPage(editor);
-    await this.store.save({
-      bookPath: this.bookPath,
-      position: this.book.positionOfPage(this.page),
-    });
+    await this.store.save({ bookPath: this.bookPath, position: this.anchor });
   }
 
   private showPage(editor: vscode.TextEditor): void {
