@@ -1,18 +1,39 @@
 import * as vscode from 'vscode';
+import { buildFakeLayout, FakeLayout } from './fakeLayout';
 
 export const SCHEME = 'pyutil';
 // 自定义 scheme 起得不显眼：悬停标签页时显示完整 URI
 const DOC_NAME = 'util.py'; // 标签页显示的伪装文件名，.py 让语言推断为 python
 
-/** 只读虚拟文档：内容只有空行，装饰画在空行上，文件本体零内容零痕迹 */
+export interface StealthSpec {
+  linesPerPage: number;
+  fakeCodeRatio: number;
+  fakeCodeLines: string[];
+}
+
+/** 只读虚拟文档：假代码进文档本体获得真实语法高亮；正文画在空槽位行上 */
 export class StealthDocProvider implements vscode.TextDocumentContentProvider {
   private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
   readonly onDidChange = this._onDidChange.event;
-  linesPerPage = 25;
+  private specKey = '';
+  layout: FakeLayout = buildFakeLayout(25, 0, []);
+
+  /** 应用新 spec；返回内容是否变化（需要 refresh） */
+  setSpec(spec: StealthSpec): boolean {
+    const key = JSON.stringify(spec);
+    if (key === this.specKey) return false;
+    this.specKey = key;
+    this.layout = buildFakeLayout(spec.linesPerPage, spec.fakeCodeRatio, spec.fakeCodeLines);
+    return true;
+  }
+
+  get expectedLineCount(): number {
+    return this.layout.content.split('\n').length;
+  }
 
   provideTextDocumentContent(): string {
-    // N 个换行 → N+1 行：0..N-1 给正文，第 N 行给页码指示
-    return '\n'.repeat(this.linesPerPage);
+    // 假代码进文档本体获得真实语法高亮；正文画在空槽位行上
+    return this.layout.content;
   }
 
   refresh(uri: vscode.Uri): void {
@@ -36,15 +57,11 @@ export class Renderer implements vscode.Disposable {
 
   constructor(private provider: StealthDocProvider) {}
 
-  async openEditor(linesPerPage: number): Promise<vscode.TextEditor> {
-    const needsResize = this.provider.linesPerPage !== linesPerPage;
-    if (needsResize) {
-      this.provider.linesPerPage = linesPerPage;
-      this.provider.refresh(this.uri);
-    }
+  async openEditor(spec: StealthSpec): Promise<vscode.TextEditor> {
+    const changed = this.provider.setSpec(spec);
+    if (changed) this.provider.refresh(this.uri);
     const doc = await vscode.workspace.openTextDocument(this.uri);
-    if (needsResize && doc.lineCount !== linesPerPage + 1) {
-      // refresh 是异步生效的：等内容更新落地再渲染，避免装饰画在旧行数上
+    if (changed && doc.lineCount !== this.provider.expectedLineCount) {
       await this.waitForDocChange(doc, 1000);
     }
     return vscode.window.showTextDocument(doc, { preview: false });
@@ -68,13 +85,13 @@ export class Renderer implements vscode.Disposable {
   }
 
   show(editor: vscode.TextEditor, lines: string[], color: string, prefix: string): void {
-    const decorations: vscode.DecorationOptions[] = lines.map((line, i) => ({
-      range: new vscode.Range(i, 0, i, 0),
+    const slots = this.provider.layout.slotLines;
+    const decorations: vscode.DecorationOptions[] = lines.slice(0, slots.length).map((line, i) => ({
+      range: new vscode.Range(slots[i], 0, slots[i], 0),
       renderOptions: {
         after: {
           contentText: line === '' ? '' : `${prefix} ${line}`,
           color,
-          // white-space: pre 防止 contentText 中连续空格被折叠
           textDecoration: 'none; white-space: pre;',
         },
       },

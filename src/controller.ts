@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Book, Layout, Position } from './book';
 import { parseEpub } from './epubParser';
 import { PositionStore } from './positionStore';
-import { Renderer, SCHEME, commentPrefixFor } from './renderer';
+import { Renderer, SCHEME, StealthSpec, commentPrefixFor } from './renderer';
 
 export class ReaderController {
   private book: Book | null = null;
@@ -29,6 +29,15 @@ export class ReaderController {
     };
   }
 
+  private spec(): StealthSpec {
+    const cfg = this.config();
+    return {
+      linesPerPage: cfg.get('linesPerPage', 25),
+      fakeCodeRatio: cfg.get('fakeCodeRatio', 0.25),
+      fakeCodeLines: cfg.get('fakeCodeLines', []),
+    };
+  }
+
   async openBook(): Promise<void> {
     const picked = await vscode.window.showOpenDialog({
       filters: { 'EPUB 电子书': ['epub'] },
@@ -46,10 +55,17 @@ export class ReaderController {
     await this.turnPage(-1);
   }
 
-  /** 老板键：清装饰 + 关伪装标签页；书还在内存里，再按翻页键即恢复 */
+  /** 老板键（双向）：伪装页可见则瞬间隐藏；不可见则重新打开续读 */
   async bossKey(): Promise<void> {
-    this.renderer.clear();
-    await this.renderer.closeStealthTabs();
+    if (this.findStealthEditor()) {
+      this.renderer.clear();
+      await this.renderer.closeStealthTabs();
+      return;
+    }
+    const state = await this.ensureBook();
+    if (state === 'none') return;
+    if (state === 'had') await this.render();
+    // 'restored'：loadBook 已渲染，无需重复
   }
 
   async gotoChapter(): Promise<void> {
@@ -131,7 +147,7 @@ export class ReaderController {
 
   private async render(): Promise<void> {
     if (!this.book) return;
-    const editor = await this.renderer.openEditor(this.layout().linesPerPage);
+    const editor = await this.renderer.openEditor(this.spec());
     this.showPage(editor);
     await this.store.save({ bookPath: this.bookPath, position: this.anchor });
   }

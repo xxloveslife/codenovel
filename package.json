@@ -2,7 +2,7 @@
   "name": "util-helper",
   "displayName": "Util Helper",
   "description": "Editor productivity helper",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "xxloveslife",
   "license": "MIT",
   "engines": { "vscode": "^1.85.0" },
@@ -14,7 +14,7 @@
       { "command": "stealthReader.openBook", "title": "Stealth Reader: Open Book" },
       { "command": "stealthReader.nextPage", "title": "Stealth Reader: Next Page" },
       { "command": "stealthReader.prevPage", "title": "Stealth Reader: Previous Page" },
-      { "command": "stealthReader.bossKey", "title": "Stealth Reader: Boss Key" },
+      { "command": "stealthReader.bossKey", "title": "Stealth Reader: Boss Key (Toggle)" },
       { "command": "stealthReader.gotoChapter", "title": "Stealth Reader: Go to Chapter" }
     ],
     "keybindings": [
@@ -40,6 +40,14 @@
         "stealthReader.commentPrefix": {
           "type": "string", "enum": ["auto", "#", "//"], "default": "auto",
           "description": "注释前缀；auto 按伪装文档语言推断"
+        },
+        "stealthReader.fakeCodeRatio": {
+          "type": "number", "default": 0.25, "minimum": 0, "maximum": 3,
+          "description": "伪装代码行与正文行的比例（0 = 关闭混排，1 = 一行正文一行代码）"
+        },
+        "stealthReader.fakeCodeLines": {
+          "type": "array", "items": { "type": "string" }, "default": [],
+          "description": "自定义伪装代码行（按顺序循环使用）；留空使用内置 Python 片段"
         }
       }
     }
