@@ -96,6 +96,12 @@
 **支持别的格式吗？**
 目前仅支持 **EPUB**（暂不支持 txt / mobi / pdf）。
 
+## 🔗 源码与反馈
+
+源码托管在 GitHub：<https://github.com/xxloveslife/codenovel>
+
+欢迎 [提 Issue](https://github.com/xxloveslife/codenovel/issues) 反馈问题或建议，也欢迎 PR 🙌
+
 ## 📄 License
 
 [MIT](LICENSE) © xxloveslife
