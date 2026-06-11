@@ -47,10 +47,6 @@
 | 隐藏 / 恢复（老板键） | `Alt+Q` |
 | 打开书 / 跳转章节 | 命令面板（`Ctrl+Shift+P`） |
 
-### 🖱️ 用鼠标侧键翻页（可选）
-
-VSCode 的快捷键系统不支持鼠标侧键，但你可以用鼠标驱动或 [X-Mouse Button Control](https://www.highrez.co.uk/downloads/XMouseButtonControl.htm) 把两个侧键映射成 `Alt+[` / `Alt+]`，即可侧键翻页。
-
 ## 🎭 两种伪装模式
 
 在设置 `CodeNovel: Disguise Mode` 中切换，随时生效：
@@ -83,15 +79,6 @@ VSCode 的快捷键系统不支持鼠标侧键，但你可以用鼠标驱动或 
 - *代码党*：`disguiseMode=code`，`widthJitter=0.3`，`fakeCodeEvery=3`，`fakeCodeBlock=2`
 - *文档党*：`disguiseMode=markdown`，`widthJitter=0.2`
 
-## 🔒 隐蔽性是怎么做到的
-
-正文从不写入文件——它通过 VSCode 的 Decoration API 作为「虚影」叠加在一个**只读虚拟文档**上。因此：
-
-- 标签页**没有**「已修改」小圆点，关闭时**不弹**保存框
-- 在任何 Git 仓库里 `git status` 都**看不到**新增 / 改动
-- 正文**不可选中、不可复制、不可搜索**（你看得到，剪贴板和全局搜索却抓不到）
-- 关掉扩展，画面瞬间干净，什么都不留
-
 ## ❓ 常见问题
 
 **进度会自动保存吗？**
@@ -108,20 +95,6 @@ VSCode 的快捷键系统不支持鼠标侧键，但你可以用鼠标驱动或 
 
 **支持别的格式吗？**
 目前仅支持 **EPUB**（暂不支持 txt / mobi / pdf）。
-
-## 🧑‍💻 开发与贡献
-
-源码：https://github.com/xxloveslife/codenovel
-
-```bash
-npm install
-npm run compile            # 编译
-npm test                   # 运行单元测试
-npm run icon               # 重新生成图标
-npx @vscode/vsce package   # 打包 vsix
-```
-
-欢迎提 Issue 与 PR。
 
 ## 📄 License
 
