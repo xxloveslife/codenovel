@@ -2,7 +2,7 @@
   "name": "codenovel",
   "displayName": "CodeNovel",
   "description": "Read EPUB books disguised as source code or markdown notes — a stealth reader for your editor.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "xxloveslife",
   "license": "MIT",
   "icon": "images/icon.png",
