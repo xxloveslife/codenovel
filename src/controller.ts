@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Book, Layout, Position } from './book';
-import { parseEpub } from './epubParser';
+import { parseBook } from './source';
 import { PositionStore } from './positionStore';
 import { Renderer, SCHEME, StealthSpec, commentPrefixFor } from './renderer';
 
@@ -30,6 +30,14 @@ export class ReaderController {
     };
   }
 
+  private sourceOpts() {
+    const cfg = this.config();
+    return {
+      chapterSplit: cfg.get('chapterSplit', 'auto') as 'auto' | 'off',
+      chapterPattern: cfg.get<string>('chapterPattern', ''),
+    };
+  }
+
   private spec(): StealthSpec {
     const cfg = this.config();
     return {
@@ -44,7 +52,7 @@ export class ReaderController {
 
   async openBook(): Promise<void> {
     const picked = await vscode.window.showOpenDialog({
-      filters: { 'EPUB 电子书': ['epub'] },
+      filters: { '电子书 (EPUB / TXT)': ['epub', 'txt'] },
       canSelectMany: false,
     });
     if (!picked?.length) return;
@@ -132,7 +140,7 @@ export class ReaderController {
 
   private async loadBook(fsPath: string, pos: Position | null): Promise<void> {
     try {
-      const parsed = await parseEpub(fsPath);
+      const parsed = await parseBook(fsPath, this.sourceOpts());
       this.book = new Book(parsed.chapters, this.layout());
       this.bookPath = fsPath;
       this.page = pos ? this.book.pageOfPosition(pos) : 0;

@@ -23,7 +23,7 @@
 
 ## ✨ 特性
 
-- 📖 **直接读 EPUB**——选一个 `.epub` 即可，自动解析章节（兼容 UTF-8 / GBK 中文书）
+- 📖 **直接读 EPUB / TXT**——选一个 `.epub` 或 `.txt` 即可，自动解析章节（兼容 UTF-8 / GBK 中文书）
 - 🥷 **两种伪装模式**——伪装成代码 `util.py` 或笔记 `notes.md`，随场景切换
 - ⌨️ **老板键**——`Alt+Q` 一键隐藏 / 再按恢复
 - 💾 **自动记忆进度**——精确到字符，重启后按一下翻页键即从原处续读
@@ -74,6 +74,8 @@
 | `fakeCodeLines` | `[]` | 自定义伪装片段（留空用内置） |
 | `textColor` | `#6A9955` | 正文颜色（默认注释绿） |
 | `commentPrefix` | `auto` | 注释前缀（仅代码模式） |
+| `chapterSplit` | `auto` | （仅TXT）章节切分：`auto` 自动识别标题，`off` 整本一章 |
+| `chapterPattern` | `""` | （仅TXT）自定义章节正则（留空用内置规则） |
 
 **推荐配置**
 - *代码党*：`disguiseMode=code`，`widthJitter=0.3`，`fakeCodeEvery=3`，`fakeCodeBlock=2`
@@ -94,7 +96,7 @@
 关闭 VSCode 窗口前先按一次 `Alt+Q` 即可避免（这只是个残留的空标签，无任何内容泄露）。
 
 **支持别的格式吗？**
-目前仅支持 **EPUB**（暂不支持 txt / mobi / pdf）。
+目前支持 **EPUB** 和 **TXT**。TXT 会自动按「第X章」等独占行的标题切分章节，可通过 `chapterSplit=off` 关闭，或用 `chapterPattern` 自定义正则；mobi / pdf 暂不支持。
 
 ## 🔗 源码与反馈
 

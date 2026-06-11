@@ -2,7 +2,7 @@
   "name": "codenovel",
   "displayName": "CodeNovel",
   "description": "Read EPUB books disguised as source code or markdown notes — a stealth reader for your editor.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "publisher": "xxloveslife",
   "license": "MIT",
   "icon": "images/icon.png",
@@ -71,6 +71,16 @@
         "stealthReader.widthJitter": {
           "type": "number", "default": 0.15, "minimum": 0, "maximum": 0.6,
           "description": "每行字数随机浮动幅度，让正文右边缘参差更自然（0 = 整齐）"
+        },
+        "stealthReader.chapterSplit": {
+          "type": "string", "enum": ["auto", "off"],
+          "enumDescriptions": ["自动识别「第X章」等标题切分章节", "不切分，整本作为一章"],
+          "default": "auto",
+          "description": "（仅 TXT）章节切分方式"
+        },
+        "stealthReader.chapterPattern": {
+          "type": "string", "default": "",
+          "description": "（仅 TXT）自定义章节标题正则（行级匹配，留空用内置规则）。例：^第.+[章回]"
         }
       }
     }

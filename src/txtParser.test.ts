@@ -80,3 +80,21 @@ describe('parseTxtBuffer 章节切分', () => {
     expect(r.chapters).toHaveLength(2);
   });
 });
+
+describe('parseTxtBuffer 覆盖补充', () => {
+  it('UTF-16 LE BOM 解码', () => {
+    // '中' U+4E2D 的 LE 字节：2D 4E
+    const b = new Uint8Array([0xff, 0xfe, 0x2d, 0x4e]);
+    expect(parseTxtBuffer(b, { fileName: 'a', split: false }).chapters[0].text).toBe('中');
+  });
+  it('标题作为最后一行（无正文）不崩溃且成章', () => {
+    const r = parseTxtBuffer(u8('正文。'.repeat(50) + '\n第二章 末尾'), { fileName: '书', split: true });
+    expect(r.chapters.some(c => c.title === '第二章 末尾')).toBe(true);
+  });
+  it('自定义正则即使产生极短章也被信任（跳过合理性校验）', () => {
+    const lines: string[] = [];
+    for (let i = 1; i <= 10; i++) { lines.push('## ' + i); lines.push('短'); }
+    const r = parseTxtBuffer(u8(lines.join('\n')), { fileName: '书', split: true, pattern: '^## \\d+$' });
+    expect(r.chapters).toHaveLength(10);
+  });
+});
