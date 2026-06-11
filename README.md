@@ -33,7 +33,7 @@
 ## 🎬 快速上手
 
 1. **安装** CodeNovel（市场搜索，或从 VSIX 安装）
-2. `Ctrl+Shift+P` 打开命令面板 → 运行 **CodeNovel: Open Book** → 选你的 `.epub`
+2. `Ctrl+Shift+P` 打开命令面板 → 运行 **CodeNovel: Open Book** → 选你的电子书（`.epub` / `.txt`）
 3. `Alt+]` / `Alt+[` 翻页，`Alt+Q` 随时隐藏 / 恢复
 
 就这么简单。下次重启 VSCode，直接按 `Alt+]` 就能接着上次读。
